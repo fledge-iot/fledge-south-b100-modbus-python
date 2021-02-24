@@ -1,13 +1,10 @@
 import copy
-import uuid
-import json
 import logging
 
 from fledge.common import logger
 from fledge.plugins.common import utils
 from fledge.services.south import exceptions
-
-from fledge-south-b100-modbus-python.b100 import get_b100_readings, close_connection
+from fledge.plugins.south.b100.b100modbus import get_b100_readings, close_connection
 
 """ Plugin for reading data from a B100
 """
@@ -28,25 +25,22 @@ _DEFAULT_CONFIG = {
         'description': 'Asset name',
         'type': 'string',
         'default': 'B100',
-        'order': "1"
-    },
-    'pollInterval': {
-        'description': 'The interval between poll calls to the device poll routine, expressed in milliseconds.',
-        'type': 'integer',
-        'default': '1000',
-        'order': '2'
+        'order': "1",
+        'displayName': 'Asset Name'
     },
     'address': {
         'description': 'Address of Modbus TCP server',
         'type': 'string',
         'default': '127.0.0.1',
-        'order': '3'
+        'order': '2',
+        'displayName': 'Address'
     },
     'port': {
         'description': 'Port of Modbus TCP server',
         'type': 'integer',
         'default': '502',
-        'order': '4'
+        'order': '3',
+        'displayName': 'Port'
     }
 }
 
@@ -55,6 +49,7 @@ _LOGGER = logger.setup(__name__, level=logging.INFO)
 
 UNIT = 1
 """  The slave unit this request is targeting """
+
 
 def plugin_info():
     """ Returns information about the plugin.
@@ -67,7 +62,7 @@ def plugin_info():
 
     return {
         'name': 'b100',
-        'version': '1.0.0',
+        'version': '1.9.0',
         'mode': 'poll',
         'type': 'south',
         'interface': '1.0',
@@ -105,12 +100,11 @@ def plugin_poll(handle):
         source_address = handle['address']['value']
         source_port = int(handle['port']['value'])
 
-        readings = get_b100_readings(source_address,source_port)
+        readings = get_b100_readings(source_address, source_port)
 
         wrapper = {
             'asset': handle['assetName']['value'],
             'timestamp': utils.local_timestamp(),
-            'key': str(uuid.uuid4()),
             'readings': readings
         }
 
@@ -141,11 +135,9 @@ def plugin_reconfigure(handle, new_config):
     if 'address' in diff or 'port' in diff:
         plugin_shutdown(handle)
         new_handle = plugin_init(new_config)
-        new_handle['restart'] = 'yes'
         _LOGGER.info("Restarting Modbus TCP plugin due to change in configuration keys [{}]".format(', '.join(diff)))
     else:
         new_handle = copy.deepcopy(new_config)
-        new_handle['restart'] = 'no'
 
     return new_handle
 
