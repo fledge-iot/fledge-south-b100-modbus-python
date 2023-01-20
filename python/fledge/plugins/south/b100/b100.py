@@ -62,7 +62,7 @@ def plugin_info():
 
     return {
         'name': 'b100',
-        'version': '2.1.0',
+        'version': '2.1.1',
         'mode': 'poll',
         'type': 'south',
         'interface': '1.0',
